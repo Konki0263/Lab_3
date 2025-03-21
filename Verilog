@@ -221,7 +221,7 @@ wire k_j;
 
 assign k_j = (k != Tape_Num -1) ? 1 :0;
 assign k_tmp = (k_j) ? (k + 1) : 4'd0;
-assign tap_AR = (!ap_idle)? (12'h80 + 4 * k) : araddr[5:0];
+assign tap_AR = (ap_idle)? (4 * k) : araddr[5:0];
 assign x_en = !ap_idle | k_j;
 assign x_cnt = (x_en) ? 0 : x_cnt + 1'b1;
 assign data_A_tmp = (k <= x_cnt)? 4 * (x_cnt - k) : 4 * (11 + x_cnt - k);
@@ -237,17 +237,19 @@ end
 reg awvalid_d;
 reg arvalid_d;
 reg wvalid_d;
+reg arready_d;
 
-assign awready = awvalid_d;
-assign wready = wvalid_d;
-assign arready = arvalid_d | arvalid;
-assign rvalid = rready & arvalid_d;
+assign awready = awvalid_d & awvalid;
+assign wready = wvalid_d & wvalid;
+assign arready = arvalid_d & arvalid;
+assign rvalid = rready & arready_d & arvalid;
 assign rdata   = (araddr[7:0] == 8'd0)? ap_ctrl : tap_Do;
 
 always @ (posedge clk) begin
     awvalid_d <= awvalid;        
     arvalid_d <= arvalid;        
-    wvalid_d <= wvalid;        
+    wvalid_d <= wvalid; 
+    arready_d <= arready;       
 end 
 
 //----------------------------------------------configuration register address  
@@ -326,7 +328,7 @@ end
 reg wdata_l;
 wire length_wire;
 
-assign length_wire = (awaddr[7:3] == 5'b00010) ? wdata_l : length;
+assign length_wire = (awaddr[7:0] == 8'd10) ? wdata_l : length;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n)
@@ -390,4 +392,6 @@ end
 
 
 endmodule
+
+
 
