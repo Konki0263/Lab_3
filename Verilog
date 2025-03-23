@@ -76,8 +76,8 @@ output wire [(pDATA_WIDTH-1):0] data_Di,
 output wire [(pADDR_WIDTH-1):0] data_A,
 input wire [(pDATA_WIDTH-1):0] data_Do,
 
-input wire clk,
-input wire rst_n
+input wire axis_clk,
+input wire axis_rst_n
 );
 
 //---------------------------------------------------------------datapath  
@@ -101,8 +101,8 @@ assign h_tmp = tap_Do;
 assign m_tmp = h * x;
 assign y_tmp = m + y;
 
-always @(posedge clk or negedge rst_n) begin
-    if(!rst_n | ap_idle) begin
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if(!axis_rst_n | ap_idle) begin
         h <= 0;
         x <= 0;
         m <= 0;
@@ -149,8 +149,8 @@ always @(*) begin
     endcase
 end 
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) 
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n) 
         state_ss <= `IdleForSS;
     else 
         state_ss <= next_state_ss;
@@ -192,23 +192,23 @@ always @(*) begin
     endcase
 end 
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) 
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n) 
         state_sm <= `IdleForSM;
     else 
         state_sm <= next_state_sm;
 end
 
 //----------------------------for tfinal
-wire [9:0] tcount_clk;
+wire [9:0] tcount_axis_clk;
     
-assign tcount_clk = (!sm_tvalid && rst_n) ? tcount + 1'b1 : tcount;
+assign tcount_axis_clk = (!sm_tvalid && axis_rst_n) ? tcount + 1'b1 : tcount;
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n || (ap_idle))
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n || (ap_idle))
             tcount <= 0; 
         else
-            tcount <= tcount_clk;
+            tcount <= tcount_axis_clk;
 end
 
 //-----------------------------------------------------------------address generation 
@@ -226,8 +226,8 @@ assign x_en = !ap_idle | k_j;
 assign x_cnt = (x_en) ? 0 : x_cnt + 1'b1;
 assign data_A_tmp = (k <= x_cnt)? 4 * (x_cnt - k) : 4 * (11 + x_cnt - k);
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n)
         k <= 0;
     else 
         k <= k_tmp;
@@ -245,7 +245,7 @@ assign arready = arvalid_d & arvalid;
 assign rvalid = rready & arready_d & arvalid;
 assign rdata   = (araddr[7:0] == 8'd0)? ap_ctrl : tap_Do;
 
-always @ (posedge clk) begin
+always @ (posedge axis_clk) begin
     awvalid_d <= awvalid;        
     arvalid_d <= arvalid;        
     wvalid_d <= wvalid; 
@@ -317,8 +317,8 @@ always @(*) begin
     endcase 
 end 
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n)
         addrmap_state <= `AP_IDLE; 
     else
         addrmap_state <= addrmap_state_next;
@@ -330,15 +330,15 @@ wire length_wire;
 
 assign length_wire = (awaddr[7:0] == 8'd10) ? wdata_l : length;
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n)
         length <= 0;
     else
         length <= length_wire;
 end
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n)
         wdata_l <= 0;
     else if (wvalid)
         wdata_l <= wdata_l + 1;
@@ -363,8 +363,8 @@ assign data_Di = (ap_ctrl[2] == 1 && ini_addr != 6'd44)? 0 : ss_tdata;
 
 assign ini_addr_n = (ini_addr == 6'd44)? ini_addr : ini_addr + 6'd4;
     
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n)
         ini_addr <= -6'd4;
     else
         ini_addr <= ini_addr_n;
@@ -383,8 +383,8 @@ assign sm_tlast = sm_tlast_reg;
 
 assign ycount_wire = (ycount != 4'd10 && ap_idle == 0)? ycount + 1 : 0;
     
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n || ap_idle)
+always @(posedge axis_clk or negedge axis_rst_n) begin
+    if (!axis_rst_n || ap_idle)
         ycount <= 0;
     else
         ycount <= ycount_wire;
@@ -392,6 +392,3 @@ end
 
 
 endmodule
-
-
-
